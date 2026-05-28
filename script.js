@@ -13,7 +13,7 @@ const pnData = {
 };
 
 const ivdData = {
-  "1/5NS": { na: 77, k: 0, cl: 77, ca: 0, mg: 0, acetate: 0 },
+  "QS": { na: 77, k: 0, cl: 77, ca: 0, mg: 0, acetate: 0 },
   "HS": { na: 77, k: 0, cl: 77, ca: 0, mg: 0, acetate: 0 },
   "NS": { na: 154, k: 0, cl: 154, ca: 0, mg: 0, acetate: 0 },
   "3% Saline": { na: 513, k: 0, cl: 513, ca: 0, mg: 0, acetate: 0 },
