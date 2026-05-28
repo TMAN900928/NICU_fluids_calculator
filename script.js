@@ -224,7 +224,7 @@ function validateInputs() {
     warnings.push("KCl concentration exceeds 2 g/pint. Please verify.");
   }
 
-  if (dol > 1 && pnType === "Type A" && feedingType !== "Full Feeding") {
+  if (dol > 1 && pnType === "Type A Starter" && feedingType !== "Full Feeding") {
     warnings.push("Starter PN usually intended for within first 24 hours of life. Please review.");
   }
 
