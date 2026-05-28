@@ -7,9 +7,18 @@ const milkData = {
 };
 
 const pnData = {
-  "Type A": {protein:3.3, kcal:53.2, na:3, phos:1.5, ca:1.4, mg:0.25, cl:0, acetate:0, glucose:10},
-  "Type B": {protein:3.0, kcal:52, na:3, phos:1.5, ca:0.15, mg:0.22, cl:2, acetate:0, glucose:10},
-  "Type C": {protein:3.8, kcal:65.2, na:4, phos:1.5, ca:0.15, mg:0.25, cl:2.7, acetate:1, glucose:12.5}
+  "Type A": {
+    protein:3.8, kcal:65.2, na:4, k:2.7, phos:1.5,
+    ca:0.15, mg:0.25, cl:2.7, acetate:1, glucose:12.5
+  },
+  "Type B": {
+    protein:3.0, kcal:52, na:3, k:2, phos:1.5,
+    ca:0.15, mg:0.22, cl:2, acetate:0, glucose:10
+  },
+  "Type C": {
+    protein:3.3, kcal:53.2, na:3, k:0, phos:1.5,
+    ca:1.4, mg:0.25, cl:0, acetate:0, glucose:10
+  }
 };
 
 const ivdData = {
