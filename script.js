@@ -34,9 +34,13 @@ const expectedFluidByDol = {
   5: 150
 };
 
+function el(id) {
+  return document.getElementById(id);
+}
+
 function getRawValue(id) {
-  const el = document.getElementById(id);
-  return el ? el.value.trim() : "";
+  const element = el(id);
+  return element ? element.value.trim() : "";
 }
 
 function getNumber(id) {
@@ -45,13 +49,15 @@ function getNumber(id) {
 }
 
 function setHTML(id, html) {
-  const el = document.getElementById(id);
-  if (el) el.innerHTML = html;
+  const element = el(id);
+  if (element) element.innerHTML = html;
 }
 
 function setValue(id, value, decimals = 1) {
-  const el = document.getElementById(id);
-  if (el && isFinite(value)) el.value = Number(value).toFixed(decimals);
+  const element = el(id);
+  if (element && isFinite(value)) {
+    element.value = Number(value).toFixed(decimals);
+  }
 }
 
 function isBlankOrZero(value) {
@@ -59,7 +65,7 @@ function isBlankOrZero(value) {
 }
 
 function setWarningBox(messages, level = "neutral") {
-  const box = document.getElementById("warningBox");
+  const box = el("warningBox");
   if (!box) return;
 
   if (!messages || messages.length === 0) {
@@ -79,11 +85,12 @@ function setWarningBox(messages, level = "neutral") {
 
 function updateExpectedFluid() {
   const dol = getNumber("dol");
-  const tf = getNumber("targetFluid");
-  const box = document.getElementById("expectedFluidBox");
+  const targetFluid = getNumber("targetFluid");
+  const box = el("expectedFluidBox");
+
   if (!box) return;
 
-  if (dol <= 0 || tf <= 0) {
+  if (dol <= 0 || targetFluid <= 0) {
     box.className = "status-box neutral";
     box.innerHTML = "Expected DOL fluid will appear here.";
     return;
@@ -92,7 +99,7 @@ function updateExpectedFluid() {
   let expected = 150;
   if (dol >= 1 && dol <= 5) expected = expectedFluidByDol[dol];
 
-  const diff = Math.abs(tf - expected);
+  const diff = Math.abs(targetFluid - expected);
 
   if (diff <= 10) box.className = "status-box green";
   else if (diff <= 20) box.className = "status-box yellow";
@@ -102,43 +109,38 @@ function updateExpectedFluid() {
 }
 
 function toggleSections() {
-  const feedingType = document.getElementById("feedingType").value;
-
-  const pnSection = document.getElementById("pnSection");
-  const ivdSection = document.getElementById("ivdSection");
-  const milkTypeGroup = document.getElementById("milkTypeGroup");
-  const feedVolumeGroup = document.getElementById("feedVolumeGroup");
+  const feedingType = el("feedingType").value;
 
   if (feedingType === "Full Feeding") {
-    pnSection.classList.add("hidden");
-    ivdSection.classList.add("hidden");
-    milkTypeGroup.classList.remove("hidden");
-    feedVolumeGroup.classList.add("hidden");
+    el("pnSection").classList.add("hidden");
+    el("ivdSection").classList.add("hidden");
+    el("milkTypeGroup").classList.remove("hidden");
+    el("feedVolumeGroup").classList.add("hidden");
   } else if (feedingType === "NBM") {
-    pnSection.classList.remove("hidden");
-    ivdSection.classList.remove("hidden");
-    milkTypeGroup.classList.add("hidden");
-    feedVolumeGroup.classList.add("hidden");
+    el("pnSection").classList.remove("hidden");
+    el("ivdSection").classList.remove("hidden");
+    el("milkTypeGroup").classList.add("hidden");
+    el("feedVolumeGroup").classList.add("hidden");
   } else {
-    pnSection.classList.remove("hidden");
-    ivdSection.classList.remove("hidden");
-    milkTypeGroup.classList.remove("hidden");
-    feedVolumeGroup.classList.remove("hidden");
+    el("pnSection").classList.remove("hidden");
+    el("ivdSection").classList.remove("hidden");
+    el("milkTypeGroup").classList.remove("hidden");
+    el("feedVolumeGroup").classList.remove("hidden");
   }
 }
 
 function validateInputs() {
-  let warnings = [];
-  let redWarnings = [];
+  const warnings = [];
+  const redWarnings = [];
 
   const weight = getNumber("weight");
   const dol = getNumber("dol");
   const targetFluid = getNumber("targetFluid");
 
-  const feedingType = document.getElementById("feedingType").value;
-  const milkType = document.getElementById("milkType").value;
-  const pnType = document.getElementById("pnType").value;
-  const ivdType = document.getElementById("ivdType").value;
+  const feedingType = el("feedingType").value;
+  const milkType = el("milkType").value;
+  const pnType = el("pnType").value;
+  const ivdType = el("ivdType").value;
 
   const feedIntervalRaw = getRawValue("feedInterval");
   const feedVolRaw = getRawValue("feedVol");
@@ -168,10 +170,6 @@ function validateInputs() {
   if (feedingType === "Full Feeding") {
     if (milkType === "") redWarnings.push("Please select milk type for full feeding.");
     if (feedIntervalRaw === "") redWarnings.push("Please enter feeding interval for full feeding.");
-
-    if (feedVolRaw !== "") {
-      warnings.push("For full feeding, feed volume should be left blank. It will be auto-calculated.");
-    }
 
     if (!isBlankOrZero(pnRateRaw) || !isBlankOrZero(lipidRateRaw) || !isBlankOrZero(ivdRateRaw)) {
       warnings.push("For full feeding, PN, lipid and IVD inputs should be left blank or 0.");
@@ -203,6 +201,7 @@ function validateInputs() {
 
   if (feedIntervalRaw !== "") {
     const interval = getNumber("feedInterval");
+
     if (interval <= 0) {
       redWarnings.push("Feeding interval must be more than 0.");
     } else if (24 % interval !== 0) {
@@ -210,7 +209,9 @@ function validateInputs() {
     }
   }
 
-  if (kcl > 2) warnings.push("KCl concentration exceeds 2 g/pint. Please verify.");
+  if (kcl > 2) {
+    warnings.push("KCl concentration exceeds 2 g/pint. Please verify.");
+  }
 
   if (dol > 1 && pnType === "Type A Starter" && feedingType !== "Full Feeding") {
     warnings.push("Starter PN usually intended for within first 24 hours of life. Please review.");
@@ -234,19 +235,19 @@ function calculate(showWarnings = false) {
   const dol = getNumber("dol");
   const targetFluid = getNumber("targetFluid");
 
-  const feedingType = document.getElementById("feedingType").value;
-  const milkType = document.getElementById("milkType").value;
+  const feedingType = el("feedingType").value;
+  const milkType = el("milkType").value;
 
   let feedVol = getNumber("feedVol");
   const feedInterval = getNumber("feedInterval");
 
-  const pnType = document.getElementById("pnType").value;
+  const pnType = el("pnType").value;
   let proteinDose = getNumber("proteinDose");
   let pnRate = getNumber("pnRate");
   let lipidDose = getNumber("lipidDose");
   let lipidRate = getNumber("lipidRate");
 
-  const ivdType = document.getElementById("ivdType").value;
+  const ivdType = el("ivdType").value;
   const dextrose = getNumber("dextrose");
   let ivdRate = getNumber("ivdRate");
   const kclPerPint = getNumber("kclPerPint");
@@ -300,6 +301,7 @@ function calculate(showWarnings = false) {
   }
 
   let totalFeedMl = 0;
+
   if (feedVol > 0 && feedInterval > 0 && feedingType !== "NBM") {
     totalFeedMl = feedVol * (24 / feedInterval);
   }
@@ -312,10 +314,11 @@ function calculate(showWarnings = false) {
   let ivdFluid = (ivdRate * 24) / weight;
 
   let totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
-  let adjustmentMessages = [];
+  const adjustmentMessages = [];
 
   if (feedingType !== "Full Feeding" && totalFluid > targetFluid) {
     let excessMlDay = (totalFluid - targetFluid) * weight;
+
     const originalIvdRate = ivdRate;
     const originalPnRate = pnRate;
 
@@ -378,43 +381,13 @@ function calculate(showWarnings = false) {
   const kclMmolPerDay = kclMmolPerMl * ivdRate * 24;
   const kclMmolKgDay = kclMmolPerDay / weight;
 
-  const sodium = (
-    ((milk.na / 1000) * totalFeedMl) +
-    ((pn.na / 100) * (pnRate * 24)) +
-    ((ivd.na / 1000) * (ivdRate * 24))
-  ) / weight;
-
-  const potassium = (
-    ((milk.k / 1000) * totalFeedMl) +
-    ((pn.k / 100) * (pnRate * 24)) +
-    ((ivd.k / 1000) * (ivdRate * 24))
-  ) / weight + kclMmolKgDay;
-
-  const chloride = (
-    ((pn.cl / 100) * (pnRate * 24)) +
-    ((ivd.cl / 1000) * (ivdRate * 24))
-  ) / weight;
-
-  const calcium = (
-    ((milk.ca / 1000) * totalFeedMl) +
-    ((pn.ca / 100) * (pnRate * 24)) +
-    ((ivd.ca / 1000) * (ivdRate * 24))
-  ) / weight;
-
-  const phosphate = (
-    ((milk.phos / 1000) * totalFeedMl) +
-    ((pn.phos / 100) * (pnRate * 24))
-  ) / weight;
-
-  const magnesium = (
-    ((pn.mg / 100) * (pnRate * 24)) +
-    ((ivd.mg / 1000) * (ivdRate * 24))
-  ) / weight;
-
-  const acetate = (
-    ((pn.acetate / 100) * (pnRate * 24)) +
-    ((ivd.acetate / 1000) * (ivdRate * 24))
-  ) / weight;
+  const sodium = (((milk.na / 1000) * totalFeedMl) + ((pn.na / 100) * (pnRate * 24)) + ((ivd.na / 1000) * (ivdRate * 24))) / weight;
+  const potassium = ((((milk.k / 1000) * totalFeedMl) + ((pn.k / 100) * (pnRate * 24)) + ((ivd.k / 1000) * (ivdRate * 24))) / weight) + kclMmolKgDay;
+  const chloride = (((pn.cl / 100) * (pnRate * 24)) + ((ivd.cl / 1000) * (ivdRate * 24))) / weight;
+  const calcium = (((milk.ca / 1000) * totalFeedMl) + ((pn.ca / 100) * (pnRate * 24)) + ((ivd.ca / 1000) * (ivdRate * 24))) / weight;
+  const phosphate = (((milk.phos / 1000) * totalFeedMl) + ((pn.phos / 100) * (pnRate * 24))) / weight;
+  const magnesium = (((pn.mg / 100) * (pnRate * 24)) + ((ivd.mg / 1000) * (ivdRate * 24))) / weight;
+  const acetate = (((pn.acetate / 100) * (pnRate * 24)) + ((ivd.acetate / 1000) * (ivdRate * 24))) / weight;
 
   setHTML("totalFluidOut",
     "<b>Total Fluid:</b> " + totalFluid.toFixed(1) + " mL/kg/day<br>" +
@@ -444,15 +417,17 @@ function calculate(showWarnings = false) {
     " | PN amino acid: " + pnProtein.toFixed(1)
   );
 
-  setHTML("lipidOut", "<b>Lipid:</b> " + actualLipidDose.toFixed(1) + " g/kg/day");
+  setHTML("lipidOut",
+    "<b>Lipid:</b> " + actualLipidDose.toFixed(1) + " g/kg/day"
+  );
 
-  setHTML("naOut", "Sodium: " + sodium.toFixed(2) + " mmol/kg/day");
-  setHTML("kOut", "Potassium: " + potassium.toFixed(2) + " mmol/kg/day<br>Added KCl contribution: " + kclMmolKgDay.toFixed(2) + " mmol/kg/day");
-  setHTML("clOut", "Chloride: " + chloride.toFixed(2) + " mmol/kg/day");
-  setHTML("caOut", "Calcium: " + calcium.toFixed(2) + " mmol/kg/day");
-  setHTML("phosOut", "Phosphate: " + phosphate.toFixed(2) + " mmol/kg/day");
-  setHTML("mgOut", "Magnesium: " + magnesium.toFixed(2) + " mmol/kg/day");
-  setHTML("acetateOut", "Acetate: " + acetate.toFixed(2) + " mmol/kg/day");
+  setHTML("naOut", "<b>Sodium:</b> " + sodium.toFixed(2) + " mmol/kg/day");
+  setHTML("kOut", "<b>Potassium:</b> " + potassium.toFixed(2) + " mmol/kg/day<br>Added KCl contribution: " + kclMmolKgDay.toFixed(2) + " mmol/kg/day");
+  setHTML("clOut", "<b>Chloride:</b> " + chloride.toFixed(2) + " mmol/kg/day");
+  setHTML("caOut", "<b>Calcium:</b> " + calcium.toFixed(2) + " mmol/kg/day");
+  setHTML("phosOut", "<b>Phosphate:</b> " + phosphate.toFixed(2) + " mmol/kg/day");
+  setHTML("mgOut", "<b>Magnesium:</b> " + magnesium.toFixed(2) + " mmol/kg/day");
+  setHTML("acetateOut", "<b>Acetate:</b> " + acetate.toFixed(2) + " mmol/kg/day");
 
   setHTML("summaryOut",
     "<b>DOL:</b> " + dol + "<br>" +
@@ -473,7 +448,7 @@ function calculate(showWarnings = false) {
   );
 
   if (showWarnings) {
-    let safetyWarnings = [];
+    const safetyWarnings = [];
 
     if (totalGDR > 12) safetyWarnings.push("GDR exceeds 12 mg/kg/min.");
     if (totalGDR < 4 && totalGDR > 0) safetyWarnings.push("GDR below 4 mg/kg/min.");
@@ -499,11 +474,8 @@ function calculate(showWarnings = false) {
 
     const allWarnings = validation.warnings.concat(safetyWarnings, adjustmentMessages);
 
-    if (allWarnings.length > 0) {
-      setWarningBox(allWarnings, "yellow");
-    } else {
-      setWarningBox([], "green");
-    }
+    if (allWarnings.length > 0) setWarningBox(allWarnings, "yellow");
+    else setWarningBox([], "green");
   }
 }
 
@@ -525,7 +497,7 @@ function resetCalculator() {
 
   setHTML("summaryOut", "Summary will appear after calculation.");
 
-  const expectedBox = document.getElementById("expectedFluidBox");
+  const expectedBox = el("expectedFluidBox");
   if (expectedBox) {
     expectedBox.className = "status-box neutral";
     expectedBox.innerHTML = "Expected DOL fluid will appear here.";
@@ -535,9 +507,9 @@ function resetCalculator() {
   toggleSections();
 }
 
-document.querySelectorAll("input, select").forEach(el => {
-  el.addEventListener("input", () => calculate(false));
-  el.addEventListener("change", () => calculate(false));
+document.querySelectorAll("input, select").forEach(element => {
+  element.addEventListener("input", () => calculate(false));
+  element.addEventListener("change", () => calculate(false));
 });
 
 toggleSections();
