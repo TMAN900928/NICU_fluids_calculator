@@ -1,49 +1,9 @@
 const milkData = {
-  "Cow Milk": {
-    carb: 4.6,
-    protein: 3.4,
-    kcal: 67,
-    na: 23,
-    k: 40,
-    ca: 124,
-    phos: 98
-  },
-  "Standard Formula": {
-    carb: 7.5,
-    protein: 1.5,
-    kcal: 67,
-    na: 6.4,
-    k: 14,
-    ca: 46,
-    phos: 33
-  },
-  "Mature Breastmilk": {
-    carb: 7.4,
-    protein: 1.1,
-    kcal: 70,
-    na: 6.4,
-    k: 15,
-    ca: 35,
-    phos: 15
-  },
-  "Preterm Formula": {
-    carb: 8.6,
-    protein: 2.0,
-    kcal: 80,
-    na: 14,
-    k: 19,
-    ca: 77,
-    phos: 41
-  },
-  "Preterm Breastmilk": {
-    carb: 6.4,
-    protein: 2.7,
-    kcal: 74,
-    na: 17,
-    k: 17,
-    ca: 29,
-    phos: 13
-  }
+  "Cow Milk": { carb: 4.6, protein: 3.4, kcal: 67, na: 23, k: 40, ca: 124, phos: 98 },
+  "Standard Formula": { carb: 7.5, protein: 1.5, kcal: 67, na: 6.4, k: 14, ca: 46, phos: 33 },
+  "Mature Breastmilk": { carb: 7.4, protein: 1.1, kcal: 70, na: 6.4, k: 15, ca: 35, phos: 15 },
+  "Preterm Formula": { carb: 8.6, protein: 2.0, kcal: 80, na: 14, k: 19, ca: 77, phos: 41 },
+  "Preterm Breastmilk": { carb: 6.4, protein: 2.7, kcal: 74, na: 17, k: 17, ca: 29, phos: 13 }
 };
 
 // PN values are PER 100 mL
@@ -91,54 +51,12 @@ const pnData = {
 
 // IVD values are mmol/L
 const ivdData = {
-  "1/5NS": {
-    na: 77,
-    k: 0,
-    cl: 77,
-    ca: 0,
-    mg: 0,
-    acetate: 0
-  },
-  "HS": {
-    na: 77,
-    k: 0,
-    cl: 77,
-    ca: 0,
-    mg: 0,
-    acetate: 0
-  },
-  "NS": {
-    na: 154,
-    k: 0,
-    cl: 154,
-    ca: 0,
-    mg: 0,
-    acetate: 0
-  },
-  "3% Saline": {
-    na: 513,
-    k: 0,
-    cl: 513,
-    ca: 0,
-    mg: 0,
-    acetate: 0
-  },
-  "HM": {
-    na: 131,
-    k: 5,
-    cl: 111,
-    ca: 2,
-    mg: 0,
-    acetate: 0
-  },
-  "No Drip": {
-    na: 0,
-    k: 0,
-    cl: 0,
-    ca: 0,
-    mg: 0,
-    acetate: 0
-  }
+  "1/5NS": { na: 77, k: 0, cl: 77, ca: 0, mg: 0, acetate: 0 },
+  "HS": { na: 77, k: 0, cl: 77, ca: 0, mg: 0, acetate: 0 },
+  "NS": { na: 154, k: 0, cl: 154, ca: 0, mg: 0, acetate: 0 },
+  "3% Saline": { na: 513, k: 0, cl: 513, ca: 0, mg: 0, acetate: 0 },
+  "HM": { na: 131, k: 5, cl: 111, ca: 2, mg: 0, acetate: 0 },
+  "No Drip": { na: 0, k: 0, cl: 0, ca: 0, mg: 0, acetate: 0 }
 };
 
 // Lipid 20% = 20 g per 100 mL
@@ -210,13 +128,24 @@ function calculate() {
   }
 
   if (feedingType !== "NBM") {
-    if (feedVol > 0 && feedInterval <= 0) {
+    if (feedingType !== "Full Feeding" && feedVol > 0 && feedInterval <= 0) {
       setHTML("warning", "Please enter feeding interval.");
       return;
     }
   }
 
   if (feedingType === "Full Feeding") {
+    if (feedInterval <= 0) {
+      setHTML("warning", "For full feeding, please enter feeding interval.");
+      return;
+    }
+
+    let totalFeedPerDay = targetFluid * weight;
+    let feedsPerDay = 24 / feedInterval;
+    feedVol = totalFeedPerDay / feedsPerDay;
+
+    document.getElementById("feedVol").value = feedVol.toFixed(1);
+
     proteinDose = 0;
     pnRate = 0;
     lipidDose = 0;
@@ -240,40 +169,44 @@ function calculate() {
   }
 
   // PN dose-rate linking
-  if (proteinDose > 0) {
-    pnRate = (proteinDose * weight * 100) / (pn.protein * 24);
-    setValue("pnRate", pnRate, 1);
-  } else if (pnRate > 0) {
-    proteinDose = (pn.protein * pnRate * 24) / (100 * weight);
-    setValue("proteinDose", proteinDose, 1);
-  }
+  if (feedingType !== "Full Feeding") {
+    if (proteinDose > 0) {
+      pnRate = (proteinDose * weight * 100) / (pn.protein * 24);
+      setValue("pnRate", pnRate, 1);
+    } else if (pnRate > 0) {
+      proteinDose = (pn.protein * pnRate * 24) / (100 * weight);
+      setValue("proteinDose", proteinDose, 1);
+    }
 
-  // Lipid dose-rate linking
-  if (lipidDose > 0) {
-    lipidRate = (lipidDose * weight * 100) / (lipidConcentration * 24);
-    setValue("lipidRate", lipidRate, 1);
-  } else if (lipidRate > 0) {
-    lipidDose = (lipidConcentration * lipidRate * 24) / (100 * weight);
-    setValue("lipidDose", lipidDose, 1);
+    // Lipid dose-rate linking
+    if (lipidDose > 0) {
+      lipidRate = (lipidDose * weight * 100) / (lipidConcentration * 24);
+      setValue("lipidRate", lipidRate, 1);
+    } else if (lipidRate > 0) {
+      lipidDose = (lipidConcentration * lipidRate * 24) / (100 * weight);
+      setValue("lipidDose", lipidDose, 1);
+    }
   }
 
   // DOL safety reminders
-  if (dol === 1 && proteinDose > 1) {
-    warnings.push("Protein exceeds DOL 1 limit of 1 g/kg/day.");
-  } else if (dol === 2 && proteinDose > 2) {
-    warnings.push("Protein exceeds DOL 2 limit of 2 g/kg/day.");
-  } else if (dol === 3 && proteinDose > 3) {
-    warnings.push("Protein exceeds DOL 3 limit of 3 g/kg/day.");
-  } else if (dol >= 4 && proteinDose > 4) {
-    warnings.push("Protein exceeds DOL 4 onwards limit of 4 g/kg/day.");
-  }
+  if (feedingType !== "Full Feeding") {
+    if (dol === 1 && proteinDose > 1) {
+      warnings.push("Protein exceeds DOL 1 limit of 1 g/kg/day.");
+    } else if (dol === 2 && proteinDose > 2) {
+      warnings.push("Protein exceeds DOL 2 limit of 2 g/kg/day.");
+    } else if (dol === 3 && proteinDose > 3) {
+      warnings.push("Protein exceeds DOL 3 limit of 3 g/kg/day.");
+    } else if (dol >= 4 && proteinDose > 4) {
+      warnings.push("Protein exceeds DOL 4 onwards limit of 4 g/kg/day.");
+    }
 
-  if (dol === 1 && lipidDose > 1) {
-    warnings.push("Lipid exceeds DOL 1 suggested limit of 1 g/kg/day.");
-  } else if (dol === 2 && lipidDose > 2) {
-    warnings.push("Lipid exceeds DOL 2 suggested limit of 2 g/kg/day.");
-  } else if (dol >= 3 && lipidDose > 3) {
-    warnings.push("Lipid exceeds DOL 3 onwards suggested limit of 3 g/kg/day.");
+    if (dol === 1 && lipidDose > 1) {
+      warnings.push("Lipid exceeds DOL 1 suggested limit of 1 g/kg/day.");
+    } else if (dol === 2 && lipidDose > 2) {
+      warnings.push("Lipid exceeds DOL 2 suggested limit of 2 g/kg/day.");
+    } else if (dol >= 3 && lipidDose > 3) {
+      warnings.push("Lipid exceeds DOL 3 onwards suggested limit of 3 g/kg/day.");
+    }
   }
 
   let totalFeedMl = 0;
@@ -299,10 +232,8 @@ function calculate() {
   let addOnRate = 0;
   let fluidMessage = "";
 
-  // If total fluid exceeds target: reduce IVD first, then PN
-  if (originalTotalFluid > targetFluid) {
+  if (feedingType !== "Full Feeding" && originalTotalFluid > targetFluid) {
     let excessMlDay = (originalTotalFluid - targetFluid) * weight;
-
     let ivdMlDay = ivdRate * 24;
 
     if (ivdMlDay >= excessMlDay) {
@@ -335,7 +266,7 @@ function calculate() {
       "Fluid exceeded target. Reduce IVD by " + cutIvdRate.toFixed(1) + " mL/hr" +
       (cutPnRate > 0 ? " and reduce PN by " + cutPnRate.toFixed(1) + " mL/hr." : ".");
 
-  } else if (originalTotalFluid < targetFluid) {
+  } else if (feedingType !== "Full Feeding" && originalTotalFluid < targetFluid) {
     let deficitMlDay = (targetFluid - originalTotalFluid) * weight;
     addOnRate = deficitMlDay / 24;
 
@@ -343,7 +274,13 @@ function calculate() {
       "Fluid below target. Suggested add-on IVD rate: " + addOnRate.toFixed(1) + " mL/hr.";
 
   } else {
-    fluidMessage = "Fluid target achieved.";
+    if (feedingType === "Full Feeding") {
+      fluidMessage =
+        "Full feeding calculated. Give " + feedVol.toFixed(1) +
+        " mL every " + feedInterval + " hourly. No PN or IVD supplementation required.";
+    } else {
+      fluidMessage = "Fluid target achieved.";
+    }
   }
 
   // Recalculate fluid after adjustment
@@ -355,19 +292,13 @@ function calculate() {
 
   // Nutrition
   let feedProtein = (milk.protein * totalFeedMl / 100) / weight;
-
-  // PN protein is per 100 mL
   let pnProtein = (pn.protein * (pnRate * 24) / 100) / weight;
-
   let totalProtein = feedProtein + pnProtein;
 
   let actualLipidDose = (lipidConcentration * lipidRate * 24) / (100 * weight);
 
   let feedCalories = (milk.kcal * totalFeedMl / 100) / weight;
-
-  // PN calories are per 100 mL
   let pnCalories = (pn.kcal * (pnRate * 24) / 100) / weight;
-
   let lipidCalories = (lipidRate * 24 * lipidKcalPerMl) / weight;
 
   let totalCalories = feedCalories + pnCalories + lipidCalories;
@@ -379,9 +310,6 @@ function calculate() {
   let totalGDR = feedGDR + pnGDR + ivdGDR;
 
   // Electrolytes
-  // Milk values are mmol/L or mg/L depending on table.
-  // PN values are mmol/100 mL.
-  // IVD values are mmol/L.
   let sodium = (
     ((milk.na / 1000) * totalFeedMl) +
     ((pn.na / 100) * (pnRate * 24)) +
@@ -448,9 +376,7 @@ function calculate() {
     " | PN amino acid: " + pnProtein.toFixed(1)
   );
 
-  setHTML("lipidOut",
-    "Lipid: " + actualLipidDose.toFixed(1) + " g/kg/day"
-  );
+  setHTML("lipidOut", "Lipid: " + actualLipidDose.toFixed(1) + " g/kg/day");
 
   setHTML("naOut", "Sodium: " + sodium.toFixed(2) + " mmol/kg/day");
   setHTML("kOut", "Potassium: " + potassium.toFixed(2) + " mmol/kg/day");
