@@ -7,9 +7,9 @@ const milkData = {
 };
 
 const pnData = {
-  "Type A": { name: "Starter", protein: 3.3, glucose: 10, na: 3, k: 0, phos: 1.5, ca: 1.4, mg: 0.25, cl: 0, acetate: 0, kcal: 53.2 },
-  "Type B": { name: "Without Acetate", protein: 3.0, glucose: 10, na: 3, k: 2, phos: 1.5, ca: 0.15, mg: 0.22, cl: 2, acetate: 0, kcal: 52 },
-  "Type C": { name: "With Acetate", protein: 3.8, glucose: 12.5, na: 4, k: 2.7, phos: 1.5, ca: 0.15, mg: 0.25, cl: 2.7, acetate: 1, kcal: 65.2 }
+  "Type A Starter": { name: "Starter", protein: 3.3, glucose: 10, na: 3, k: 0, phos: 1.5, ca: 1.4, mg: 0.25, cl: 0, acetate: 0, kcal: 53.2 },
+  "Type B D10% Without Acetate": { name: "Without Acetate", protein: 3.0, glucose: 10, na: 3, k: 2, phos: 1.5, ca: 0.15, mg: 0.22, cl: 2, acetate: 0, kcal: 52 },
+  "Type C D12.5% With Acetate": {{ name: "With Acetate", protein: 3.8, glucose: 12.5, na: 4, k: 2.7, phos: 1.5, ca: 0.15, mg: 0.25, cl: 2.7, acetate: 1, kcal: 65.2 }
 };
 
 const ivdData = {
@@ -266,7 +266,7 @@ function calculate(showWarnings = false) {
   if (weight <= 0 || targetFluid <= 0 || feedingType === "") return;
 
   const milk = milkData[milkType] || milkData["Mature Breastmilk"];
-  const pn = pnData[pnType] || pnData["Type A"];
+  const pn = pnData[pnType] || pnData["Type A Starter"];
   const ivd = ivdData[ivdType] || ivdData["No Drip"];
 
   if (feedingType === "Full Feeding") {
