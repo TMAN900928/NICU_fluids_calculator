@@ -65,6 +65,12 @@ const lipidConcentration = 20;
 // Lipid 20% gives approximately 2 kcal/mL
 const lipidKcalPerMl = 2;
 
+// 1 g KCl = 13.3 mmol potassium
+const kclMmolPerGram = 13.3;
+
+// 1 pint = 500 mL
+const pintMl = 500;
+
 function getNumber(id) {
   return parseFloat(document.getElementById(id).value) || 0;
 }
@@ -98,6 +104,7 @@ function calculate() {
   let ivdType = document.getElementById("ivdType").value;
   let dextrose = getNumber("dextrose");
   let ivdRate = getNumber("ivdRate");
+  let kclPerPint = getNumber("kclPerPint");
 
   let warnings = [];
 
@@ -152,6 +159,7 @@ function calculate() {
     lipidRate = 0;
     ivdRate = 0;
     dextrose = 0;
+    kclPerPint = 0;
 
     document.getElementById("proteinDose").value = 0;
     document.getElementById("pnRate").value = 0;
@@ -159,16 +167,18 @@ function calculate() {
     document.getElementById("lipidRate").value = 0;
     document.getElementById("ivdRate").value = 0;
     document.getElementById("dextrose").value = 0;
+    document.getElementById("kclPerPint").value = 0;
   }
 
   if (ivdType === "No Drip") {
     ivdRate = 0;
     dextrose = 0;
+    kclPerPint = 0;
     document.getElementById("ivdRate").value = 0;
     document.getElementById("dextrose").value = 0;
+    document.getElementById("kclPerPint").value = 0;
   }
 
-  // PN dose-rate linking
   if (feedingType !== "Full Feeding") {
     if (proteinDose > 0) {
       pnRate = (proteinDose * weight * 100) / (pn.protein * 24);
@@ -178,7 +188,6 @@ function calculate() {
       setValue("proteinDose", proteinDose, 1);
     }
 
-    // Lipid dose-rate linking
     if (lipidDose > 0) {
       lipidRate = (lipidDose * weight * 100) / (lipidConcentration * 24);
       setValue("lipidRate", lipidRate, 1);
@@ -188,7 +197,6 @@ function calculate() {
     }
   }
 
-  // DOL safety reminders
   if (feedingType !== "Full Feeding") {
     if (dol === 1 && proteinDose > 1) {
       warnings.push("Protein exceeds DOL 1 limit of 1 g/kg/day.");
@@ -283,14 +291,12 @@ function calculate() {
     }
   }
 
-  // Recalculate fluid after adjustment
   pnFluid = (pnRate * 24) / weight;
   lipidFluid = (lipidRate * 24) / weight;
   ivdFluid = (ivdRate * 24) / weight;
 
   let totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
 
-  // Nutrition
   let feedProtein = (milk.protein * totalFeedMl / 100) / weight;
   let pnProtein = (pn.protein * (pnRate * 24) / 100) / weight;
   let totalProtein = feedProtein + pnProtein;
@@ -303,13 +309,15 @@ function calculate() {
 
   let totalCalories = feedCalories + pnCalories + lipidCalories;
 
-  // GDR
   let feedGDR = (milk.carb * feedRate) / (weight * 6);
   let pnGDR = (pn.glucose * pnRate) / (weight * 6);
   let ivdGDR = (dextrose * ivdRate) / (weight * 6);
   let totalGDR = feedGDR + pnGDR + ivdGDR;
 
-  // Electrolytes
+  let kclMmolPerMl = (kclPerPint * kclMmolPerGram) / pintMl;
+  let kclMmolPerDay = kclMmolPerMl * ivdRate * 24;
+  let kclMmolKgDay = kclMmolPerDay / weight;
+
   let sodium = (
     ((milk.na / 1000) * totalFeedMl) +
     ((pn.na / 100) * (pnRate * 24)) +
@@ -319,8 +327,9 @@ function calculate() {
   let potassium = (
     ((milk.k / 1000) * totalFeedMl) +
     ((pn.k / 100) * (pnRate * 24)) +
-    ((ivd.k / 1000) * (ivdRate * 24))
-  ) / weight;
+    ((ivd.k / 1000) * (ivdRate * 24)) +
+    kclMmolKgDay
+  ) / weight * weight;
 
   let chloride = (
     ((pn.cl / 100) * (pnRate * 24)) +
@@ -379,7 +388,10 @@ function calculate() {
   setHTML("lipidOut", "Lipid: " + actualLipidDose.toFixed(1) + " g/kg/day");
 
   setHTML("naOut", "Sodium: " + sodium.toFixed(2) + " mmol/kg/day");
-  setHTML("kOut", "Potassium: " + potassium.toFixed(2) + " mmol/kg/day");
+  setHTML("kOut",
+    "Potassium: " + potassium.toFixed(2) + " mmol/kg/day" +
+    "<br>Added KCl contribution: " + kclMmolKgDay.toFixed(2) + " mmol/kg/day"
+  );
   setHTML("clOut", "Chloride: " + chloride.toFixed(2) + " mmol/kg/day");
   setHTML("caOut", "Calcium: " + calcium.toFixed(2) + " mmol/kg/day");
   setHTML("phosOut", "Phosphate: " + phosphate.toFixed(2) + " mmol/kg/day");
