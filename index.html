@@ -77,27 +77,30 @@
 
   </div>
 
-  <div class="card" id="ivdSection">
+<div class="card" id="ivdSection">
 
-    <h2>IVD</h2>
+  <h2>IVD</h2>
 
-    <label>IVD Type*</label>
-    <select id="ivdType">
-      <option>1/5NS</option>
-      <option>HS</option>
-      <option>NS</option>
-      <option>3% Saline</option>
-      <option>HM</option>
-      <option>No Drip</option>
-    </select>
+  <label>IVD Type*</label>
+  <select id="ivdType">
+    <option>1/5NS</option>
+    <option>HS</option>
+    <option>NS</option>
+    <option>3% Saline</option>
+    <option>HM</option>
+    <option>No Drip</option>
+  </select>
 
-    <label>Dextrose (%)</label>
-    <input type="number" id="dextrose">
+  <label>Dextrose (%)</label>
+  <input type="number" id="dextrose">
 
-    <label>IVD Rate (ml/hr)</label>
-    <input type="number" id="ivdRate" step="0.1">
+  <label>IVD Rate (ml/hr)</label>
+  <input type="number" id="ivdRate" step="0.1">
 
-  </div>
+  <label>KCl per pint (g)</label>
+  <input type="number" id="kclPerPint" step="0.1">
+
+</div>
 
   <button onclick="calculate()">Calculate</button>
 
