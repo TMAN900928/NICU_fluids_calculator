@@ -225,17 +225,7 @@ function validateInputs() {
     if (ivdRateRaw === "") redWarnings.push("Please enter IVD rate. Enter 0 if not using IVD.");
   }
 
-  if (feedingType !== "Full Feeding") {
-    if (proteinDose > 0 && pnRate > 0 && proteinDoseRaw !== "" && pnRateRaw !== "") {
-      redWarnings.push("Please enter either protein dose OR PN rate, not both.");
-    }
-
-    if (lipidDose > 0 && lipidRate > 0 && lipidDoseRaw !== "" && lipidRateRaw !== "") {
-      redWarnings.push("Please enter either lipid dose OR lipid rate, not both.");
-    }
-  }
-
-  if (ivdRate > 0) {
+    if (ivdRate > 0) {
     if (ivdType === "") redWarnings.push("Please select IVD type.");
     if (ivdType === "No Drip") redWarnings.push("IVD rate is more than 0 but IVD type is No Drip. Please review.");
     if (dextroseRaw === "") redWarnings.push("Please enter dextrose concentration.");
