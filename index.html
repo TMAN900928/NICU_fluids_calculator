@@ -15,20 +15,20 @@
       <h2>Instructions</h2>
 
       <p>
-        <b>Full Feeding:</b><br />
+        <b>Full Feeding:</b><br>
         Select <b>Full Feeding</b>, then enter milk type and feeding interval.
         Feed volume will be auto-calculated based on target fluid.
         PN and IVD inputs will be ignored.
       </p>
 
       <p>
-        <b>Increment Feeding / NBM:</b><br />
+        <b>Increment Feeding / NBM:</b><br>
         Please complete BOTH PN and IVD sections.
         If not using PN, lipid or IVD, please enter <b>0</b> instead of leaving blank.
       </p>
 
       <p>
-        <b>IVD:</b><br />
+        <b>IVD:</b><br>
         If IVD rate is more than 0, please enter drip type, dextrose concentration and KCl per pint.
         If no KCl is added, please enter <b>0</b>.
       </p>
@@ -79,8 +79,10 @@
         <input type="number" id="feedVol" step="0.1" />
       </div>
 
-      <label>Feed Interval (hourly)</label>
-      <input type="number" id="feedInterval" step="1" />
+      <div id="feedIntervalGroup">
+        <label>Feed Interval (hourly)</label>
+        <input type="number" id="feedInterval" step="1" />
+      </div>
     </div>
 
     <div class="card" id="pnSection">
@@ -174,6 +176,6 @@
     </div>
   </div>
 
-  <script src="script.js?v=16"></script>
+  <script src="script.js?v=17"></script>
 </body>
 </html>
