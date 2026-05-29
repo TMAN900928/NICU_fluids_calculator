@@ -34,6 +34,8 @@ const expectedFluidByDol = {
   5: 150
 };
 
+let previousFeedingType = "";
+
 function el(id) {
   return document.getElementById(id);
 }
@@ -58,6 +60,11 @@ function setValue(id, value, decimals = 1) {
   if (element && isFinite(value)) {
     element.value = Number(value).toFixed(decimals);
   }
+}
+
+function clearValue(id) {
+  const element = el(id);
+  if (element) element.value = "";
 }
 
 function isBlankOrZero(value) {
@@ -111,21 +118,38 @@ function updateExpectedFluid() {
 function toggleSections() {
   const feedingType = el("feedingType").value;
 
+  if (previousFeedingType === "Full Feeding" && feedingType !== "Full Feeding") {
+    clearValue("feedVol");
+  }
+
+  previousFeedingType = feedingType;
+
   if (feedingType === "Full Feeding") {
     el("pnSection").classList.add("hidden");
     el("ivdSection").classList.add("hidden");
     el("milkTypeGroup").classList.remove("hidden");
     el("feedVolumeGroup").classList.add("hidden");
+    el("feedIntervalGroup").classList.remove("hidden");
   } else if (feedingType === "NBM") {
     el("pnSection").classList.remove("hidden");
     el("ivdSection").classList.remove("hidden");
     el("milkTypeGroup").classList.add("hidden");
     el("feedVolumeGroup").classList.add("hidden");
+    el("feedIntervalGroup").classList.add("hidden");
   } else {
     el("pnSection").classList.remove("hidden");
     el("ivdSection").classList.remove("hidden");
     el("milkTypeGroup").classList.remove("hidden");
     el("feedVolumeGroup").classList.remove("hidden");
+    el("feedIntervalGroup").classList.remove("hidden");
+  }
+}
+
+function handleNoDrip() {
+  if (el("ivdType").value === "No Drip") {
+    setValue("ivdRate", 0);
+    setValue("dextrose", 0);
+    setValue("kclPerPint", 0);
   }
 }
 
@@ -144,12 +168,21 @@ function validateInputs() {
 
   const feedIntervalRaw = getRawValue("feedInterval");
   const feedVolRaw = getRawValue("feedVol");
+
+  const proteinDoseRaw = getRawValue("proteinDose");
   const pnRateRaw = getRawValue("pnRate");
+
+  const lipidDoseRaw = getRawValue("lipidDose");
   const lipidRateRaw = getRawValue("lipidRate");
+
   const ivdRateRaw = getRawValue("ivdRate");
   const dextroseRaw = getRawValue("dextrose");
   const kclRaw = getRawValue("kclPerPint");
 
+  const proteinDose = getNumber("proteinDose");
+  const pnRate = getNumber("pnRate");
+  const lipidDose = getNumber("lipidDose");
+  const lipidRate = getNumber("lipidRate");
   const ivdRate = getNumber("ivdRate");
   const kcl = getNumber("kclPerPint");
 
@@ -192,6 +225,16 @@ function validateInputs() {
     if (ivdRateRaw === "") redWarnings.push("Please enter IVD rate. Enter 0 if not using IVD.");
   }
 
+  if (feedingType !== "Full Feeding") {
+    if (proteinDose > 0 && pnRate > 0 && proteinDoseRaw !== "" && pnRateRaw !== "") {
+      redWarnings.push("Please enter either protein dose OR PN rate, not both.");
+    }
+
+    if (lipidDose > 0 && lipidRate > 0 && lipidDoseRaw !== "" && lipidRateRaw !== "") {
+      redWarnings.push("Please enter either lipid dose OR lipid rate, not both.");
+    }
+  }
+
   if (ivdRate > 0) {
     if (ivdType === "") redWarnings.push("Please select IVD type.");
     if (ivdType === "No Drip") redWarnings.push("IVD rate is more than 0 but IVD type is No Drip. Please review.");
@@ -220,9 +263,62 @@ function validateInputs() {
   return { warnings, redWarnings };
 }
 
+function makeFluidSuggestion(feedFluid, pnFluid, lipidFluid, ivdFluid, targetFluid, weight) {
+  const totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
+
+  if (totalFluid < targetFluid) {
+    const deficitRate = ((targetFluid - totalFluid) * weight) / 24;
+    return "Fluid below target. Suggested add-on IVD rate: " + deficitRate.toFixed(1) + " mL/hr.";
+  }
+
+  if (Math.abs(totalFluid - targetFluid) < 0.01) {
+    return "Fluid target achieved.";
+  }
+
+  let excessMlDay = (totalFluid - targetFluid) * weight;
+
+  const ivdMlDay = ivdFluid * weight;
+  const pnMlDay = pnFluid * weight;
+  const lipidMlDay = lipidFluid * weight;
+
+  let cutIvdRate = 0;
+  let cutPnRate = 0;
+  let cutLipidRate = 0;
+
+  const ivdCut = Math.min(excessMlDay, ivdMlDay);
+  cutIvdRate = ivdCut / 24;
+  excessMlDay -= ivdCut;
+
+  if (excessMlDay > 0) {
+    const pnCut = Math.min(excessMlDay, pnMlDay);
+    cutPnRate = pnCut / 24;
+    excessMlDay -= pnCut;
+  }
+
+  if (excessMlDay > 0) {
+    const lipidCut = Math.min(excessMlDay, lipidMlDay);
+    cutLipidRate = lipidCut / 24;
+    excessMlDay -= lipidCut;
+  }
+
+  let message = "Fluid exceeds target. Suggested reduction: reduce IVD by " + cutIvdRate.toFixed(1) + " mL/hr";
+
+  if (cutPnRate > 0) message += ", then reduce PN by " + cutPnRate.toFixed(1) + " mL/hr";
+  if (cutLipidRate > 0) message += ", then reduce lipid by " + cutLipidRate.toFixed(1) + " mL/hr";
+
+  if (excessMlDay > 0) {
+    message += ". Even after stopping IVD, PN and lipid, fluid remains above target. Review feeds or target.";
+  } else {
+    message += ".";
+  }
+
+  return message;
+}
+
 function calculate(showWarnings = false) {
   updateExpectedFluid();
   toggleSections();
+  handleNoDrip();
 
   const validation = validateInputs();
 
@@ -249,7 +345,7 @@ function calculate(showWarnings = false) {
 
   const ivdType = el("ivdType").value;
   const dextrose = getNumber("dextrose");
-  let ivdRate = getNumber("ivdRate");
+  const ivdRate = getNumber("ivdRate");
   const kclPerPint = getNumber("kclPerPint");
 
   if (weight <= 0 || targetFluid <= 0 || feedingType === "") return;
@@ -271,11 +367,6 @@ function calculate(showWarnings = false) {
     pnRate = 0;
     lipidDose = 0;
     lipidRate = 0;
-    ivdRate = 0;
-
-    setValue("pnRate", 0);
-    setValue("lipidRate", 0);
-    setValue("ivdRate", 0);
   }
 
   if (feedingType === "NBM") {
@@ -283,18 +374,23 @@ function calculate(showWarnings = false) {
   }
 
   if (feedingType !== "Full Feeding") {
-    if (proteinDose > 0) {
+    const proteinDoseRaw = getRawValue("proteinDose");
+    const pnRateRaw = getRawValue("pnRate");
+    const lipidDoseRaw = getRawValue("lipidDose");
+    const lipidRateRaw = getRawValue("lipidRate");
+
+    if (proteinDose > 0 && pnRate === 0 && proteinDoseRaw !== "") {
       pnRate = (proteinDose * weight * 100) / (pn.protein * 24);
       setValue("pnRate", pnRate);
-    } else if (pnRate > 0) {
+    } else if (pnRate > 0 && proteinDose === 0 && pnRateRaw !== "") {
       proteinDose = (pn.protein * pnRate * 24) / (100 * weight);
       setValue("proteinDose", proteinDose);
     }
 
-    if (lipidDose > 0) {
+    if (lipidDose > 0 && lipidRate === 0 && lipidDoseRaw !== "") {
       lipidRate = (lipidDose * weight * 100) / (lipidConcentration * 24);
       setValue("lipidRate", lipidRate);
-    } else if (lipidRate > 0) {
+    } else if (lipidRate > 0 && lipidDose === 0 && lipidRateRaw !== "") {
       lipidDose = (lipidConcentration * lipidRate * 24) / (100 * weight);
       setValue("lipidDose", lipidDose);
     }
@@ -308,57 +404,23 @@ function calculate(showWarnings = false) {
 
   const feedRate = totalFeedMl / 24;
 
-  let feedFluid = totalFeedMl / weight;
-  let pnFluid = (pnRate * 24) / weight;
-  let lipidFluid = (lipidRate * 24) / weight;
-  let ivdFluid = (ivdRate * 24) / weight;
+  const feedFluid = totalFeedMl / weight;
+  const pnFluid = (pnRate * 24) / weight;
+  const lipidFluid = (lipidRate * 24) / weight;
+  const ivdFluid = (ivdRate * 24) / weight;
+  const totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
 
-  let totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
-  const adjustmentMessages = [];
+  let fluidMessage = "";
 
-  if (feedingType !== "Full Feeding" && totalFluid > targetFluid) {
-    let excessMlDay = (totalFluid - targetFluid) * weight;
-
-    const originalIvdRate = ivdRate;
-    const originalPnRate = pnRate;
-
-    const ivdMlDay = ivdRate * 24;
-
-    if (ivdMlDay >= excessMlDay) {
-      ivdRate = ivdRate - (excessMlDay / 24);
-    } else {
-      excessMlDay -= ivdMlDay;
-      ivdRate = 0;
-      pnRate = Math.max(0, pnRate - (excessMlDay / 24));
-    }
-
-    const cutIvd = originalIvdRate - ivdRate;
-    const cutPn = originalPnRate - pnRate;
-
-    setValue("ivdRate", ivdRate);
-    setValue("pnRate", pnRate);
-
-    proteinDose = (pn.protein * pnRate * 24) / (100 * weight);
-    setValue("proteinDose", proteinDose);
-
-    adjustmentMessages.push(
-      "Fluid exceeded target. Reduce IVD by " + cutIvd.toFixed(1) +
-      " mL/hr" + (cutPn > 0 ? " and PN by " + cutPn.toFixed(1) + " mL/hr." : ".")
-    );
-
-    pnFluid = (pnRate * 24) / weight;
-    ivdFluid = (ivdRate * 24) / weight;
-    totalFluid = feedFluid + pnFluid + lipidFluid + ivdFluid;
-  } else if (feedingType !== "Full Feeding" && totalFluid < targetFluid) {
-    const deficitRate = ((targetFluid - totalFluid) * weight) / 24;
-    adjustmentMessages.push("Fluid below target. Suggested add-on IVD rate: " + deficitRate.toFixed(1) + " mL/hr.");
-  } else if (feedingType === "Full Feeding") {
-    adjustmentMessages.push(
-      "Full feeding calculated. Give " + feedVol.toFixed(1) +
-      " mL every " + feedInterval + " hourly. No PN or IVD supplementation required."
-    );
+  if (feedingType === "Full Feeding") {
+    fluidMessage =
+      "Full feeding calculated. Give " +
+      feedVol.toFixed(1) +
+      " mL every " +
+      feedInterval +
+      " hourly. No PN or IVD supplementation required.";
   } else {
-    adjustmentMessages.push("Fluid target achieved.");
+    fluidMessage = makeFluidSuggestion(feedFluid, pnFluid, lipidFluid, ivdFluid, targetFluid, weight);
   }
 
   const feedProtein = (milk.protein * totalFeedMl / 100) / weight;
@@ -372,10 +434,27 @@ function calculate(showWarnings = false) {
   const lipidCalories = (lipidRate * 24 * lipidKcalPerMl) / weight;
   const totalCalories = feedCalories + pnCalories + lipidCalories;
 
+  const feedCarbGDay = (milk.carb * totalFeedMl) / 100;
+  const pnCarbGDay = (pn.glucose * pnRate * 24) / 100;
+  const ivdCarbGDay = (dextrose * ivdRate * 24) / 100;
+
+  const carbCalories = ((feedCarbGDay + pnCarbGDay + ivdCarbGDay) * 3.4) / weight;
+  const lipidCaloriesPerKg = lipidCalories;
+  const nonProteinCalories = carbCalories + lipidCaloriesPerKg;
+
+  let carbPercent = 0;
+  let lipidPercent = 0;
+
+  if (nonProteinCalories > 0) {
+    carbPercent = (carbCalories / nonProteinCalories) * 100;
+    lipidPercent = (lipidCaloriesPerKg / nonProteinCalories) * 100;
+  }
+
   const feedGDR = (milk.carb * feedRate) / (weight * 6);
   const pnGDR = (pn.glucose * pnRate) / (weight * 6);
   const ivdGDR = (dextrose * ivdRate) / (weight * 6);
-  const totalGDR = feedGDR + pnGDR + ivdGDR;
+  const ivGDR = pnGDR + ivdGDR;
+  const totalGlucoseDelivery = feedGDR + ivGDR;
 
   const kclMmolPerMl = (kclPerPint * kclMmolPerGram) / pintMl;
   const kclMmolPerDay = kclMmolPerMl * ivdRate * 24;
@@ -398,17 +477,20 @@ function calculate(showWarnings = false) {
   );
 
   setHTML("gdrOut",
-    "<b>Total GDR:</b> " + totalGDR.toFixed(1) + " mg/kg/min<br>" +
-    "Feeding GDR: " + feedGDR.toFixed(1) +
-    " | PN GDR: " + pnGDR.toFixed(1) +
-    " | IVD GDR: " + ivdGDR.toFixed(1)
+    "<b>IV GDR:</b> " + ivGDR.toFixed(1) + " mg/kg/min<br>" +
+    "PN GDR: " + pnGDR.toFixed(1) +
+    " | IVD GDR: " + ivdGDR.toFixed(1) + "<br>" +
+    "<b>Feed glucose delivery:</b> " + feedGDR.toFixed(1) + " mg/kg/min<br>" +
+    "<b>Total glucose delivery:</b> " + totalGlucoseDelivery.toFixed(1) + " mg/kg/min"
   );
 
   setHTML("caloriesOut",
     "<b>Total Calories:</b> " + totalCalories.toFixed(1) + " kcal/kg/day<br>" +
     "Feeds: " + feedCalories.toFixed(1) +
     " | PN: " + pnCalories.toFixed(1) +
-    " | Lipid: " + lipidCalories.toFixed(1)
+    " | Lipid: " + lipidCalories.toFixed(1) + "<br>" +
+    "Non-protein calories: carbohydrate " + carbPercent.toFixed(0) +
+    "% | lipid " + lipidPercent.toFixed(0) + "%"
   );
 
   setHTML("proteinOut",
@@ -439,19 +521,21 @@ function calculate(showWarnings = false) {
     "<b>PN:</b><br>" + pnType + " at " + pnRate.toFixed(1) + " mL/hr<br><br>" +
     "<b>Lipid:</b><br>" + lipidRate.toFixed(1) + " mL/hr<br><br>" +
     "<b>IVD:</b><br>" +
-    (ivdType || "No Drip") + "<br>" +
+    (el("ivdType").value || "No Drip") + "<br>" +
     "D" + dextrose + "<br>" +
     ivdRate.toFixed(1) + " mL/hr<br>" +
     "KCl " + kclPerPint + " g/pint<br><br>" +
-    "<b>Total GDR:</b> " + totalGDR.toFixed(1) + " mg/kg/min<br><br>" +
-    "<b>Fluid Message:</b><br>" + adjustmentMessages.join("<br>")
+    "<b>IV GDR:</b> " + ivGDR.toFixed(1) + " mg/kg/min<br>" +
+    "<b>Feed glucose delivery:</b> " + feedGDR.toFixed(1) + " mg/kg/min<br>" +
+    "<b>Total glucose delivery:</b> " + totalGlucoseDelivery.toFixed(1) + " mg/kg/min<br><br>" +
+    "<b>Fluid Message:</b><br>" + fluidMessage
   );
 
   if (showWarnings) {
     const safetyWarnings = [];
 
-    if (totalGDR > 12) safetyWarnings.push("GDR exceeds 12 mg/kg/min.");
-    if (totalGDR < 4 && totalGDR > 0) safetyWarnings.push("GDR below 4 mg/kg/min.");
+    if (ivGDR > 12) safetyWarnings.push("IV GDR exceeds 12 mg/kg/min.");
+    if (ivGDR < 4 && ivGDR > 0) safetyWarnings.push("IV GDR below 4 mg/kg/min.");
 
     if (feedFluid > targetFluid) safetyWarnings.push("Feeds alone exceed intended total fluid.");
     if (totalFluid - targetFluid > 20) safetyWarnings.push("Total fluid exceeds target significantly. Please review.");
@@ -465,6 +549,10 @@ function calculate(showWarnings = false) {
     if (dol === 2 && actualLipidDose > 2) safetyWarnings.push("Lipid exceeds DOL 2 suggested limit of 2 g/kg/day.");
     if (dol >= 3 && actualLipidDose > 3) safetyWarnings.push("Lipid exceeds DOL 3 onwards suggested limit of 3 g/kg/day.");
 
+    if (totalProtein > 4) safetyWarnings.push("Total protein exceeds 4 g/kg/day. Please review.");
+    if (totalCalories > 120) safetyWarnings.push("Total calories exceed 120 kcal/kg/day. Please review.");
+    if (totalCalories > 0 && totalCalories < 90) safetyWarnings.push("Total calories below 90 kcal/kg/day. Please review.");
+
     if (sodium > 6) safetyWarnings.push("Sodium delivery exceeds 6 mmol/kg/day.");
     if (potassium > 4) safetyWarnings.push("Potassium delivery exceeds 4 mmol/kg/day.");
     if (calcium > 2) safetyWarnings.push("Calcium delivery exceeds 2 mmol/kg/day.");
@@ -472,7 +560,7 @@ function calculate(showWarnings = false) {
     if (magnesium > 0.5) safetyWarnings.push("Magnesium delivery exceeds 0.5 mmol/kg/day.");
     if (chloride > 6) safetyWarnings.push("Chloride delivery exceeds 6 mmol/kg/day.");
 
-    const allWarnings = validation.warnings.concat(safetyWarnings, adjustmentMessages);
+    const allWarnings = validation.warnings.concat(safetyWarnings, [fluidMessage]);
 
     if (allWarnings.length > 0) setWarningBox(allWarnings, "yellow");
     else setWarningBox([], "green");
@@ -502,6 +590,8 @@ function resetCalculator() {
     expectedBox.className = "status-box neutral";
     expectedBox.innerHTML = "Expected DOL fluid will appear here.";
   }
+
+  previousFeedingType = "";
 
   setWarningBox([], "neutral");
   toggleSections();
