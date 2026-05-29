@@ -1,181 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NICU Fluids Calculator</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <div class="container">
-    <h1>NICU Fluids Calculator</h1>
 
-    <div class="card instruction-card">
-      <h2>Instructions</h2>
+<div class="container">
 
-      <p>
-        <b>Full Feeding:</b><br>
-        Select <b>Full Feeding</b>, then enter milk type and feeding interval.
-        Feed volume will be auto-calculated based on target fluid.
-        PN and IVD inputs will be ignored.
-      </p>
+  <h1>NICU Fluids Calculator</h1>
 
-      <p>
-        <b>Increment Feeding / NBM:</b><br>
-        Please complete BOTH PN and IVD sections.
-        If not using PN, lipid or IVD, please enter <b>0</b> instead of leaving blank.
-      </p>
+  <div class="card instruction-card">
+    <h2>Instructions</h2>
 
-      <p>
-        <b>IVD:</b><br>
-        If IVD rate is more than 0, please enter drip type, dextrose concentration and KCl per pint.
-        If no KCl is added, please enter <b>0</b>.
-      </p>
-    </div>
+    <p>
+      <b>To Calculate Full Feeding:</b><br>
+      Select Full Feeding, then enter the milk type and feeding interval.
+      The feed volume per feed will be automatically calculated based on the target fluid entered.
+      PN, lipid and IVD inputs will be ignored and are not required.
+    </p>
 
-    <div class="card">
-      <h2>Patient Details</h2>
+    <p>
+      <b>To Calculate Increment Feeding or NBM:</b><br>
+      Please complete BOTH the PN and IVD sections.
+      If PN, lipid or IVD are not being used, please enter 0 instead of leaving the field blank.
+    </p>
 
-      <label>Weight (kg)*</label>
-      <input type="number" id="weight" step="0.01" />
+    <p>
+      <b>For Increment Feeding:</b><br>
+      Enter the milk type, feed volume and feeding interval.
+    </p>
 
-      <label>Day of Life (DOL)*</label>
-      <input type="number" id="dol" step="1" />
+    <p>
+      <b>For NBM:</b><br>
+      Milk type, feed volume and feeding interval will be ignored.
+    </p>
 
-      <label>Total Fluid Target (mL/kg/day)*</label>
-      <input type="number" id="targetFluid" step="1" />
+    <p>
+      <b>IVD:</b><br>
+      If IVD rate is more than 0, please enter drip type, dextrose concentration and KCl per pint.
+      If no KCl is added, please enter 0.
+    </p>
+  </div>
 
-      <div id="expectedFluidBox" class="status-box neutral">
-        Expected DOL fluid will appear here.
-      </div>
-    </div>
+  <div class="card">
+    <h2>Patient Details</h2>
 
-    <div class="card">
-      <h2>Feeding</h2>
+    <label>Weight (kg)</label>
+    <input type="text" id="weight" placeholder="e.g. 1.2">
 
-      <label>Feeding Type*</label>
-      <select id="feedingType">
-        <option value="">Select feeding type</option>
-        <option>Full Feeding</option>
-        <option>Increment Feeding</option>
-        <option>NBM</option>
-      </select>
+    <label>Day of Life (DOL)</label>
+    <input type="text" id="dol" placeholder="e.g. 3">
 
-      <div id="milkTypeGroup">
-        <label>Milk Type*</label>
-        <select id="milkType">
-          <option value="">Select milk type</option>
-          <option>Cow Milk</option>
-          <option>Standard Formula</option>
-          <option>Mature Breastmilk</option>
-          <option>Preterm Formula</option>
-          <option>Preterm Breastmilk</option>
-        </select>
-      </div>
+    <label>Total Fluid Target (mL/kg/day)</label>
+    <input type="text" id="targetFluid" placeholder="e.g. 100">
 
-      <div id="feedVolumeGroup">
-        <label>Feed Volume (mL)</label>
-        <input type="number" id="feedVol" step="0.1" />
-      </div>
-
-      <div id="feedIntervalGroup">
-        <label>Feed Interval (hourly)</label>
-        <input type="number" id="feedInterval" step="1" />
-      </div>
-    </div>
-
-    <div class="card" id="pnSection">
-      <h2>PN</h2>
-
-      <label>PN Type*</label>
-      <select id="pnType">
-        <option>Type A Starter</option>
-        <option>Type B D10% Without Acetate</option>
-        <option>Type C D12.5% With Acetate</option>
-      </select>
-
-      <label>Protein / Amino Acid (g/kg/day)</label>
-      <input type="number" id="proteinDose" step="0.1" />
-
-      <label>PN Rate (mL/hr)</label>
-      <input type="number" id="pnRate" step="0.1" />
-
-      <h2>Lipid</h2>
-
-      <label>Lipid Dose (g/kg/day)</label>
-      <input type="number" id="lipidDose" step="0.1" />
-
-      <label>Lipid Rate (mL/hr)</label>
-      <input type="number" id="lipidRate" step="0.1" />
-    </div>
-
-    <div class="card" id="ivdSection">
-      <h2>IVD</h2>
-
-      <label>IVD Type*</label>
-      <select id="ivdType">
-        <option value="">Select IVD type</option>
-        <option>QS</option>
-        <option>HS</option>
-        <option>NS</option>
-        <option>3% Saline</option>
-        <option>HM</option>
-        <option>No Drip</option>
-      </select>
-
-      <label>Dextrose (%)</label>
-      <input type="number" id="dextrose" step="0.1" />
-
-      <label>IVD Rate (mL/hr)</label>
-      <input type="number" id="ivdRate" step="0.1" />
-
-      <label>KCl per pint (g)</label>
-      <input type="number" id="kclPerPint" step="0.1" />
-    </div>
-
-    <div class="button-row">
-      <button onclick="calculate(true)">Calculate / Validate</button>
-      <button class="secondary-btn" onclick="resetCalculator()">Reset</button>
-    </div>
-
-    <div id="warningBox" class="warning-box neutral">
-      No validation performed yet.
-    </div>
-
-    <div class="card output">
-      <h2>Results</h2>
-
-      <p id="totalFluidOut"></p>
-      <p id="gdrOut"></p>
-      <p id="caloriesOut"></p>
-      <p id="proteinOut"></p>
-      <p id="lipidOut"></p>
-
-      <h3>Electrolytes</h3>
-      <p id="naOut"></p>
-      <p id="kOut"></p>
-      <p id="clOut"></p>
-      <p id="caOut"></p>
-      <p id="phosOut"></p>
-      <p id="mgOut"></p>
-      <p id="acetateOut"></p>
-    </div>
-
-    <div class="card summary-card">
-      <h2>Calculation Summary</h2>
-      <div id="summaryOut">Summary will appear after calculation.</div>
-    </div>
-
-    <div class="card disclaimer">
-      <h2>Disclaimer</h2>
-      <p>
-        This calculator is intended as a clinical aid only.
-        All prescriptions and fluid plans must be independently verified by the treating clinician.
-      </p>
+    <div id="expectedFluidBox" class="status-box neutral">
+      Expected DOL fluid will appear here.
     </div>
   </div>
 
-  <script src="script.js?v=18"></script>
+  <div class="card">
+    <h2>Feeding</h2>
+
+    <label>Feeding Type</label>
+    <select id="feedingType">
+      <option value="">Select Feeding Type</option>
+      <option>Full Feeding</option>
+      <option>Increment Feeding</option>
+      <option>NBM</option>
+    </select>
+
+    <div id="milkTypeGroup">
+      <label>Milk Type</label>
+      <select id="milkType">
+        <option value="">Select Milk Type</option>
+        <option>Cow Milk</option>
+        <option>Standard Formula</option>
+        <option>Mature Breastmilk</option>
+        <option>Preterm Formula</option>
+        <option>Preterm Breastmilk</option>
+      </select>
+    </div>
+
+    <div id="feedVolumeGroup">
+      <label>Feed Volume (mL)</label>
+      <input type="text" id="feedVol" placeholder="e.g. 12.5">
+    </div>
+
+    <div id="feedIntervalGroup">
+      <label>Feed Interval (hours)</label>
+      <input type="text" id="feedInterval" placeholder="e.g. 3">
+    </div>
+  </div>
+
+  <div class="card" id="pnSection">
+    <h2>PN</h2>
+
+    <label>PN Type</label>
+    <select id="pnType">
+      <option>Type A Starter</option>
+      <option>Type B D10% Without Acetate</option>
+      <option>Type C D12.5% With Acetate</option>
+    </select>
+
+    <label>Protein / Amino Acid (g/kg/day)</label>
+    <input type="text" id="proteinDose" placeholder="e.g. 3.0 or enter 0 if not used">
+
+    <label>PN Rate (mL/hr)</label>
+    <input type="text" id="pnRate" placeholder="e.g. 4.5 or enter 0 if not used">
+
+    <h2>Lipid</h2>
+
+    <label>Lipid Dose (g/kg/day)</label>
+    <input type="text" id="lipidDose" placeholder="e.g. 3.0 or enter 0 if not used">
+
+    <label>Lipid Rate (mL/hr)</label>
+    <input type="text" id="lipidRate" placeholder="e.g. 0.5 or enter 0 if not used">
+
+    <p style="font-size:12px;color:grey;">
+      Please enter values to 1 decimal point where applicable.
+      Enter 0 if a component is not being used.
+    </p>
+  </div>
+
+  <div class="card" id="ivdSection">
+    <h2>IVD</h2>
+
+    <label>IVD Type</label>
+    <select id="ivdType">
+      <option value="">Select IVD Type</option>
+      <option>QS</option>
+      <option>HS</option>
+      <option>NS</option>
+      <option>3% Saline</option>
+      <option>HM</option>
+      <option>No Drip</option>
+    </select>
+
+    <label>Dextrose (%)</label>
+    <input type="text" id="dextrose" placeholder="e.g. 10.0">
+
+    <label>IVD Rate (mL/hr)</label>
+    <input type="text" id="ivdRate" placeholder="e.g. 2.0 or enter 0 if not used">
+
+    <label>KCl per pint (g)</label>
+    <input type="text" id="kclPerPint" placeholder="e.g. 1.0 or enter 0 if none">
+
+    <p style="font-size:12px;color:grey;">
+      Please enter values to 1 decimal point where applicable.
+      Enter 0 if a component is not being used.
+    </p>
+  </div>
+
+  <div class="button-row">
+    <button onclick="calculate(true)">Calculate / Validate</button>
+    <button class="secondary-btn" onclick="resetCalculator()">Reset</button>
+  </div>
+
+  <div id="warningBox" class="warning-box neutral">
+    No validation performed yet.
+  </div>
+
+  <div class="card output">
+    <h2>Results</h2>
+
+    <p id="totalFluidOut"></p>
+    <p id="gdrOut"></p>
+    <p id="caloriesOut"></p>
+    <p id="proteinOut"></p>
+    <p id="lipidOut"></p>
+
+    <h3>Electrolytes</h3>
+
+    <p id="naOut"></p>
+    <p id="kOut"></p>
+    <p id="clOut"></p>
+    <p id="caOut"></p>
+    <p id="phosOut"></p>
+    <p id="mgOut"></p>
+    <p id="acetateOut"></p>
+  </div>
+
+  <div class="card summary-card">
+    <h2>Calculation Summary</h2>
+    <div id="summaryOut">
+      Summary will appear after calculation.
+    </div>
+  </div>
+
+  <div class="card disclaimer">
+    <h2>Disclaimer</h2>
+    <p>
+      This calculator is intended as a clinical aid only.
+      All prescriptions and fluid plans must be independently verified by the treating clinician.
+    </p>
+  </div>
+
+</div>
+
+<script src="script.js?v=19"></script>
+
 </body>
 </html>
