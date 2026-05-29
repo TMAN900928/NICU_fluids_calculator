@@ -25,6 +25,11 @@ h1{
   box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
 
+.card h2{
+  margin-top:0;
+  color:#3b2a78;
+}
+
 .instruction-card{
   background:#fff8dc;
   border:2px solid #d4af37;
@@ -32,6 +37,10 @@ h1{
 
 .summary-card{
   background:#f5f7ff;
+}
+
+.summary-card div{
+  line-height:1.7;
 }
 
 .disclaimer{
@@ -89,6 +98,11 @@ button:hover{
   line-height:1.5;
 }
 
+.output h3{
+  margin-top:20px;
+  color:#3b2a78;
+}
+
 .warning-box{
   padding:15px;
   border-radius:10px;
@@ -132,22 +146,7 @@ button:hover{
   display:none;
 }
 
-.summary-card div{
-  line-height:1.7;
-}
-
-.output h3{
-  margin-top:20px;
-  color:#3b2a78;
-}
-
-.card h2{
-  margin-top:0;
-  color:#3b2a78;
-}
-
 @media(max-width:700px){
-
   body{
     padding:10px;
   }
