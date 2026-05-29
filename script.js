@@ -71,6 +71,10 @@ function isBlankOrZero(value) {
   return value === "" || Number(value) === 0;
 }
 
+function isValidNumberInput(value) {
+  return value === "" || /^-?\d+(\.\d+)?$/.test(value);
+}
+
 function setWarningBox(messages, level = "neutral") {
   const box = el("warningBox");
   if (!box) return;
@@ -169,20 +173,34 @@ function validateInputs() {
   const feedIntervalRaw = getRawValue("feedInterval");
   const feedVolRaw = getRawValue("feedVol");
 
-  const proteinDoseRaw = getRawValue("proteinDose");
   const pnRateRaw = getRawValue("pnRate");
-
-  const lipidDoseRaw = getRawValue("lipidDose");
   const lipidRateRaw = getRawValue("lipidRate");
-
   const ivdRateRaw = getRawValue("ivdRate");
   const dextroseRaw = getRawValue("dextrose");
   const kclRaw = getRawValue("kclPerPint");
 
-  const proteinDose = getNumber("proteinDose");
-  const pnRate = getNumber("pnRate");
-  const lipidDose = getNumber("lipidDose");
-  const lipidRate = getNumber("lipidRate");
+  const numericFields = [
+    ["weight", "Weight"],
+    ["dol", "Day of Life"],
+    ["targetFluid", "Target Fluid"],
+    ["feedVol", "Feed Volume"],
+    ["feedInterval", "Feed Interval"],
+    ["proteinDose", "Protein Dose"],
+    ["pnRate", "PN Rate"],
+    ["lipidDose", "Lipid Dose"],
+    ["lipidRate", "Lipid Rate"],
+    ["dextrose", "Dextrose"],
+    ["ivdRate", "IVD Rate"],
+    ["kclPerPint", "KCl per pint"]
+  ];
+
+  numericFields.forEach(([id, label]) => {
+    const raw = getRawValue(id);
+    if (!isValidNumberInput(raw)) {
+      redWarnings.push("Invalid input at " + label + ". Please enter numbers only.");
+    }
+  });
+
   const ivdRate = getNumber("ivdRate");
   const kcl = getNumber("kclPerPint");
 
@@ -225,7 +243,7 @@ function validateInputs() {
     if (ivdRateRaw === "") redWarnings.push("Please enter IVD rate. Enter 0 if not using IVD.");
   }
 
-    if (ivdRate > 0) {
+  if (ivdRate > 0) {
     if (ivdType === "") redWarnings.push("Please select IVD type.");
     if (ivdType === "No Drip") redWarnings.push("IVD rate is more than 0 but IVD type is No Drip. Please review.");
     if (dextroseRaw === "") redWarnings.push("Please enter dextrose concentration.");
@@ -258,6 +276,11 @@ function makeFluidSuggestion(feedFluid, pnFluid, lipidFluid, ivdFluid, targetFlu
 
   if (totalFluid < targetFluid) {
     const deficitRate = ((targetFluid - totalFluid) * weight) / 24;
+
+    if (deficitRate < 0.1) {
+      return "Fluid target achieved.";
+    }
+
     return "Fluid below target. Suggested add-on IVD rate: " + deficitRate.toFixed(1) + " mL/hr.";
   }
 
@@ -291,10 +314,19 @@ function makeFluidSuggestion(feedFluid, pnFluid, lipidFluid, ivdFluid, targetFlu
     excessMlDay -= lipidCut;
   }
 
+  if (cutIvdRate < 0.1 && cutPnRate < 0.1 && cutLipidRate < 0.1) {
+    return "Fluid target achieved.";
+  }
+
   let message = "Fluid exceeds target. Suggested reduction: reduce IVD by " + cutIvdRate.toFixed(1) + " mL/hr";
 
-  if (cutPnRate > 0) message += ", then reduce PN by " + cutPnRate.toFixed(1) + " mL/hr";
-  if (cutLipidRate > 0) message += ", then reduce lipid by " + cutLipidRate.toFixed(1) + " mL/hr";
+  if (cutPnRate >= 0.1) {
+    message += ", then reduce PN by " + cutPnRate.toFixed(1) + " mL/hr";
+  }
+
+  if (cutLipidRate >= 0.1) {
+    message += ", then reduce lipid by " + cutLipidRate.toFixed(1) + " mL/hr";
+  }
 
   if (excessMlDay > 0) {
     message += ". Even after stopping IVD, PN and lipid, fluid remains above target. Review feeds or target.";
